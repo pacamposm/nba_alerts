@@ -1,0 +1,1 @@
+A file is needed as git doesn't allow to commit an empty folder.
