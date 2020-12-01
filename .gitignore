@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+
+### Application properties ###
+/images/*.png
+
+### Application properties ###
+application.properties
+
