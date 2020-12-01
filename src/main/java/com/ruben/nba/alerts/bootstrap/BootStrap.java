@@ -7,6 +7,8 @@ import com.ruben.nba.alerts.publishers.TwitPublisher;
 import com.ruben.nba.alerts.repositories.ImagesRepository;
 import com.ruben.nba.alerts.repositories.NbaStatsRepository;
 import com.ruben.nba.alerts.repositories.PublishedIdsRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +22,9 @@ import java.util.stream.StreamSupport;
 
 @Component
 public class BootStrap implements CommandLineRunner {
+
+
+    Logger logger = LoggerFactory.getLogger(BootStrap.class);
 
     private final NbaStatsRepository nbaStatsRepository;
     private final ImagesRepository imagesRepository;
@@ -44,9 +49,10 @@ public class BootStrap implements CommandLineRunner {
     public void run(String... args) {
 
         try {
+            logger.info("Comenzamos");
             initPublishedList();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Se ha prioducido un error", e);
         }
 
         scheduleTask();
@@ -67,12 +73,12 @@ public class BootStrap implements CommandLineRunner {
                 try {
                     askForAlertsAndPublish();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    logger.error("Se ha prioducido un error", e);
                 }
             }
         };
 
-        Timer timer = new Timer("Timer");
+        Timer timer = new Timer("PublishAlerts");
         timer.schedule(task, 0, 30000);
 
     }
@@ -80,7 +86,7 @@ public class BootStrap implements CommandLineRunner {
     private void askForAlertsAndPublish() throws IOException {
         List<Message> messages = getUnpublished();
 
-        System.out.println("Mensajes a publicar " + messages.size());
+        logger.info("Mensajes a publicar " + messages.size());
 
         for (Message message : messages) {
             try {
@@ -88,7 +94,8 @@ public class BootStrap implements CommandLineRunner {
                 twitPublisher.publish(message);
                 publishedIdsRepository.add(message.getMessageId());
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.warn(messages.toString());
+                logger.warn("No ha podido publicar el mensaje", e);
             }
         }
     }
