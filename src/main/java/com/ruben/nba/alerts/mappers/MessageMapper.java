@@ -14,13 +14,22 @@ public class MessageMapper {
 
         message.setMessageId(getAlertId(jsonObject));
         message.setPersonId(getPersonId(jsonObject));
+        message.setTeamId(getTeamId(jsonObject));
         message.setText(getMessageFullText(jsonObject));
 
         return message;
     }
 
     private String getAlertId(JsonNode jsonObject) {
-        return jsonObject.get("AlertId").asText();
+        String id = jsonObject.get("AlertId").asText();
+        if ("0".equals(id)) {
+            id = jsonObject.get("Timestamp").asText();
+        }
+        return id;
+    }
+
+    private String getTeamId(JsonNode jsonObject) {
+        return jsonObject.get("TeamId").asText();
     }
 
     private String getPersonId(JsonNode jsonObject) {

@@ -20,7 +20,7 @@ public class AlertsFilter {
     public Predicate<JsonNode> getFilter(){
         List<Predicate<JsonNode>> allFilters = new ArrayList<>();
 
-        allFilters.add(getPersonIdFilter());
+        //allFilters.add(getPersonIdFilter());
         allFilters.add(getIsNotPublishedFilter());
 
         return allFilters.stream().reduce(x->true, Predicate::and);
@@ -31,7 +31,13 @@ public class AlertsFilter {
     }
 
     private Predicate<JsonNode> getIsNotPublishedFilter(){
-        return jsonObj -> !publishedIdsRepository.isPublished(jsonObj.get("AlertId").asText());
+        return jsonObject -> {
+            String id = jsonObject.get("AlertId").asText();
+            if ("0".equals(id)) {
+                id = jsonObject.get("Timestamp").asText();
+            }
+            return !publishedIdsRepository.isPublished(id);
+        };
     }
 
 }

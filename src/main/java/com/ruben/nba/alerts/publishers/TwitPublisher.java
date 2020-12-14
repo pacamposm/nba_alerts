@@ -29,7 +29,13 @@ public class TwitPublisher {
         Twitter twitter = new TwitterFactory(configBuilder.build()).getInstance();
 
         String statusMessage = message.getText();
-        File file = imagesRepository.get(message.getPersonId());
+
+        File file;
+        if ("0".equals(message.getPersonId()) || "-1".equals(message.getPersonId())) {
+            file = imagesRepository.getTeam(message.getTeamId());
+        } else {
+            file = imagesRepository.getPlayer(message.getPersonId());
+        }
 
         StatusUpdate status = new StatusUpdate(statusMessage);
         status.setMedia(file);

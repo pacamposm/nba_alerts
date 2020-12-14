@@ -7,6 +7,7 @@ import com.ruben.nba.alerts.publishers.TwitPublisher;
 import com.ruben.nba.alerts.repositories.ImagesRepository;
 import com.ruben.nba.alerts.repositories.NbaStatsRepository;
 import com.ruben.nba.alerts.repositories.PublishedIdsRepository;
+import org.apache.batik.transcoder.TranscoderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -24,7 +25,7 @@ import java.util.stream.StreamSupport;
 public class BootStrap implements CommandLineRunner {
 
 
-    Logger logger = LoggerFactory.getLogger(BootStrap.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BootStrap.class);
 
     private final NbaStatsRepository nbaStatsRepository;
     private final ImagesRepository imagesRepository;
@@ -49,10 +50,10 @@ public class BootStrap implements CommandLineRunner {
     public void run(String... args) {
 
         try {
-            logger.info("Comenzamos");
+            LOGGER.info("Comenzamos");
             initPublishedList();
         } catch (Exception e) {
-            logger.error("Se ha prioducido un error", e);
+            LOGGER.error("Se ha prioducido un error", e);
         }
 
         scheduleTask();
@@ -73,7 +74,7 @@ public class BootStrap implements CommandLineRunner {
                 try {
                     askForAlertsAndPublish();
                 } catch (Exception e) {
-                    logger.error("Se ha prioducido un error", e);
+                    LOGGER.error("Se ha producido un error", e);
                 }
             }
         };
@@ -86,7 +87,7 @@ public class BootStrap implements CommandLineRunner {
     private void askForAlertsAndPublish() throws IOException {
         List<Message> messages = getUnpublished();
 
-        logger.info("Mensajes a publicar " + messages.size());
+        LOGGER.info("Mensajes a publicar " + messages.size());
 
         for (Message message : messages) {
             try {
@@ -94,8 +95,8 @@ public class BootStrap implements CommandLineRunner {
                 twitPublisher.publish(message);
                 publishedIdsRepository.add(message.getMessageId());
             } catch (Exception e) {
-                logger.warn(messages.toString());
-                logger.warn("No ha podido publicar el mensaje", e);
+                LOGGER.warn(messages.toString());
+                LOGGER.warn("No ha podido publicar el mensaje", e);
             }
         }
     }
@@ -111,12 +112,32 @@ public class BootStrap implements CommandLineRunner {
 
     }
 
-    private void downloadImageIfNotExists(Message message) throws IOException {
+    private void downloadImageIfNotExists(Message message) throws IOException, TranscoderException {
         String playerId = message.getPersonId();
 
-        if (!imagesRepository.exists(playerId)) {
-            byte[] imageBytes = nbaStatsRepository.getImage(playerId);
-            imagesRepository.save(playerId, imageBytes);
+        if ("0".equals(playerId) || "-1".equals(playerId)) {
+            String teamId = message.getTeamId();
+            downloadTeamImageIfNotExists(teamId);
+        } else {
+            downloadPlayerImageIfNotExists(playerId);
         }
     }
+
+    private void downloadPlayerImageIfNotExists(String playerId) throws IOException {
+        if (!imagesRepository.existsPlayer(playerId)) {
+            byte[] imageBytes = nbaStatsRepository.getPlayerImage(playerId);
+            imagesRepository.savePlayer(playerId, imageBytes);
+        }
+    }
+
+    private void downloadTeamImageIfNotExists(String teamId) throws IOException, TranscoderException {
+        if (!imagesRepository.existsTeam(teamId)) {
+            String teamImageUrl = nbaStatsRepository.getTeamImageURL(teamId);
+            imagesRepository.saveTeam(teamId, teamImageUrl);
+        }
+    }
+
+
+
+
 }

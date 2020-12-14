@@ -1,6 +1,5 @@
 package com.ruben.nba.alerts.repositories;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +15,9 @@ public class NbaStatsRepository {
 
     private final static String STATS_URL = "https://stats.nba.com/js/data/widgets/nba_stat_alerts.json";
 
-    private final static String PHOTO_URL = "https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/{playerId}.png";
+    private final static String PLAYER_PHOTO_URL = "https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/{playerId}.png";
+
+    private final static String TEAM_PHOTO_URL = "https://cdn.nba.com/logos/nba/{teamId}/primary/L/logo.svg";
 
 
     public JsonNode getAll() throws IOException {
@@ -28,9 +29,13 @@ public class NbaStatsRepository {
         return mapper.readTree(response.getBody());
     }
 
-    public byte[] getImage(String playerId) {
-        String url = PHOTO_URL.replace("{playerId}", playerId);
+    public byte[] getPlayerImage(String playerId) {
+        String url = PLAYER_PHOTO_URL.replace("{playerId}", playerId);
         return restTemplate.getForObject(url, byte[].class);
+    }
+
+    public String getTeamImageURL(String teamId) {
+        return TEAM_PHOTO_URL.replace("{teamId}", teamId);
     }
 
 
