@@ -6,6 +6,7 @@ public class Message {
     private String personId;
     private String teamId;
     private String text;
+    private String timestamp;
 
     public String getMessageId() {
         return messageId;
@@ -39,6 +40,14 @@ public class Message {
         this.teamId = teamId;
     }
 
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
+    }
+
     @Override
     public String toString() {
         return "Message{" +
@@ -46,6 +55,7 @@ public class Message {
                 ", personId='" + personId + '\'' +
                 ", teamId='" + teamId + '\'' +
                 ", text='" + text + '\'' +
+                ", timestamp='" + timestamp + '\'' +
                 '}';
     }
 }

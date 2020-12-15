@@ -1,5 +1,6 @@
 package com.ruben.nba.alerts.bootstrap;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.ruben.nba.alerts.filters.AlertsFilter;
 import com.ruben.nba.alerts.mappers.MessageMapper;
@@ -14,10 +15,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -53,7 +51,7 @@ public class BootStrap implements CommandLineRunner {
             LOGGER.info("Comenzamos");
             initPublishedList();
         } catch (Exception e) {
-            LOGGER.error("Se ha prioducido un error", e);
+            LOGGER.error("Se ha producido un error", e);
         }
 
         scheduleTask();
@@ -108,6 +106,7 @@ public class BootStrap implements CommandLineRunner {
         return StreamSupport.stream(nbaStatsResponse.spliterator(), true)
                 .filter(alertsFilter.getFilter())
                 .map(messageMapper::map)
+                .sorted(Comparator.comparing(Message::getTimestamp))
                 .collect(Collectors.toCollection(ArrayList::new));
 
     }
