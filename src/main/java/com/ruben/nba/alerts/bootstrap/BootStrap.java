@@ -61,7 +61,7 @@ public class BootStrap implements CommandLineRunner {
         List<Message> messages = getUnpublished();
 
         for (Message message: messages) {
-            publishedIdsRepository.add(message.getMessageId());
+            publishedIdsRepository.add(message);
         }
     }
 
@@ -91,7 +91,7 @@ public class BootStrap implements CommandLineRunner {
             try {
                 downloadImageIfNotExists(message);
                 twitPublisher.publish(message);
-                publishedIdsRepository.add(message.getMessageId());
+                publishedIdsRepository.add(message);
             } catch (Exception e) {
                 LOGGER.warn(messages.toString());
                 LOGGER.warn("No ha podido publicar el mensaje", e);
@@ -104,11 +104,26 @@ public class BootStrap implements CommandLineRunner {
         ArrayNode nbaStatsResponse = (ArrayNode) nbaStatsRepository.getAll().get("alerts");
 
         return StreamSupport.stream(nbaStatsResponse.spliterator(), true)
-                .filter(alertsFilter.getFilter())
+                .sorted(getComparator())
                 .map(messageMapper::map)
-                .sorted(Comparator.comparing(Message::getTimestamp))
+                .filter(alertsFilter.getFilter())
                 .collect(Collectors.toCollection(ArrayList::new));
 
+    }
+
+    private Comparator<JsonNode> getComparator() {
+        return (json1, json2) -> {
+            int visit1 = json1.get("VisitorTeamScore").asInt(0);
+            int visit2 = json2.get("VisitorTeamScore").asInt(0);
+            int difference = visit1 - visit2;
+            if (difference != 0) {
+                return difference;
+            } else {
+                int home1 = json1.get("HomeTeamScore").asInt(0);
+                int home2 = json2.get("HomeTeamScore").asInt(0);
+                return home1 - home2;
+            }
+        };
     }
 
     private void downloadImageIfNotExists(Message message) throws IOException, TranscoderException {

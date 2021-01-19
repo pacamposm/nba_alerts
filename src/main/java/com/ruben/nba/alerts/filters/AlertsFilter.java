@@ -1,6 +1,7 @@
 package com.ruben.nba.alerts.filters;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.ruben.nba.alerts.bootstrap.Message;
 import com.ruben.nba.alerts.repositories.PublishedIdsRepository;
 import org.springframework.stereotype.Component;
 
@@ -17,27 +18,15 @@ public class AlertsFilter {
         this.publishedIdsRepository = publishedIdsRepository;
     }
 
-    public Predicate<JsonNode> getFilter(){
-        List<Predicate<JsonNode>> allFilters = new ArrayList<>();
-
-        //allFilters.add(getPersonIdFilter());
+    public Predicate<Message> getFilter(){
+        List<Predicate<Message>> allFilters = new ArrayList<>();
         allFilters.add(getIsNotPublishedFilter());
 
         return allFilters.stream().reduce(x->true, Predicate::and);
     }
 
-    private Predicate<JsonNode> getPersonIdFilter(){
-        return jsonObj -> jsonObj.get("PersonId").asInt() > 0;
-    }
-
-    private Predicate<JsonNode> getIsNotPublishedFilter(){
-        return jsonObject -> {
-            String id = jsonObject.get("AlertId").asText();
-            if ("0".equals(id)) {
-                id = jsonObject.get("Timestamp").asText();
-            }
-            return !publishedIdsRepository.isPublished(id);
-        };
+    private Predicate<Message> getIsNotPublishedFilter(){
+        return message -> !publishedIdsRepository.isPublished(message);
     }
 
 }

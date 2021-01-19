@@ -1,12 +1,13 @@
 package com.ruben.nba.alerts.bootstrap;
 
+import java.util.Objects;
+
 public class Message {
 
     private String messageId;
     private String personId;
     private String teamId;
     private String text;
-    private String timestamp;
 
     public String getMessageId() {
         return messageId;
@@ -40,14 +41,6 @@ public class Message {
         this.teamId = teamId;
     }
 
-    public String getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(String timestamp) {
-        this.timestamp = timestamp;
-    }
-
     @Override
     public String toString() {
         return "Message{" +
@@ -55,7 +48,22 @@ public class Message {
                 ", personId='" + personId + '\'' +
                 ", teamId='" + teamId + '\'' +
                 ", text='" + text + '\'' +
-                ", timestamp='" + timestamp + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Message message = (Message) o;
+        return messageId.equals(message.messageId) &&
+                personId.equals(message.personId) &&
+                teamId.equals(message.teamId) &&
+                text.equals(message.text);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(messageId, personId, teamId, text);
     }
 }

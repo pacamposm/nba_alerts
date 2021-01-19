@@ -21,11 +21,7 @@ public class MessageMapper {
     }
 
     private String getAlertId(JsonNode jsonObject) {
-        String id = jsonObject.get("AlertId").asText();
-        if ("0".equals(id)) {
-            id = jsonObject.get("Timestamp").asText();
-        }
-        return id;
+        return jsonObject.get("AlertId").asText();
     }
 
     private String getTeamId(JsonNode jsonObject) {
