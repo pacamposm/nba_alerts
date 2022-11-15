@@ -1,45 +1,46 @@
 package com.ruben.nba.alerts.bootstrap;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.ruben.nba.alerts.filters.AlertsFilter;
-import com.ruben.nba.alerts.mappers.MessageMapper;
-import com.ruben.nba.alerts.publishers.TwitPublisher;
-import com.ruben.nba.alerts.repositories.ImagesRepository;
-import com.ruben.nba.alerts.repositories.NbaStatsRepository;
-import com.ruben.nba.alerts.repositories.PublishedIdsRepository;
-import org.apache.batik.transcoder.TranscoderException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.ruben.nba.alerts.data.Message;
+import com.ruben.nba.alerts.filters.AlertsFilter;
+import com.ruben.nba.alerts.mappers.MessageMapper;
+import com.ruben.nba.alerts.publishers.TwitPublisher;
+import com.ruben.nba.alerts.repositories.PublishedMessagesRepository;
+import com.ruben.nba.alerts.service.NbaStatsService;
+import com.ruben.nba.alerts.utils.LambdaExceptionUtil;
 
 @Component
 public class BootStrap implements CommandLineRunner {
 
-
     private static final Logger LOGGER = LoggerFactory.getLogger(BootStrap.class);
 
-    private final NbaStatsRepository nbaStatsRepository;
-    private final ImagesRepository imagesRepository;
+    private final NbaStatsService nbaStatsService;
     private final AlertsFilter alertsFilter;
     private final MessageMapper messageMapper;
     private final TwitPublisher twitPublisher;
-    private final PublishedIdsRepository publishedIdsRepository;
+    private final PublishedMessagesRepository publishedIdsRepository;
 
-    public BootStrap(NbaStatsRepository nbaStatsRepository, AlertsFilter alertsFilter, MessageMapper messageMapper,
-                     ImagesRepository imagesRepository, TwitPublisher twitPublisher,
-                     PublishedIdsRepository publishedIdsRepository) {
+    public BootStrap(NbaStatsService nbaStatsService, AlertsFilter alertsFilter, MessageMapper messageMapper,
+            TwitPublisher twitPublisher, PublishedMessagesRepository publishedIdsRepository) {
 
-        this.nbaStatsRepository = nbaStatsRepository;
+        this.nbaStatsService = nbaStatsService;
         this.alertsFilter = alertsFilter;
         this.messageMapper = messageMapper;
-        this.imagesRepository = imagesRepository;
         this.twitPublisher = twitPublisher;
         this.publishedIdsRepository = publishedIdsRepository;
     }
@@ -59,10 +60,7 @@ public class BootStrap implements CommandLineRunner {
 
     private void initPublishedList() throws IOException {
         List<Message> messages = getUnpublished();
-
-        for (Message message: messages) {
-            publishedIdsRepository.add(message);
-        }
+        publishedIdsRepository.addAll(messages);
     }
 
     public void scheduleTask() {
@@ -89,7 +87,6 @@ public class BootStrap implements CommandLineRunner {
 
         for (Message message : messages) {
             try {
-                downloadImageIfNotExists(message);
                 twitPublisher.publish(message);
                 publishedIdsRepository.add(message);
             } catch (Exception e) {
@@ -101,12 +98,10 @@ public class BootStrap implements CommandLineRunner {
 
     private List<Message> getUnpublished() throws IOException {
 
-        ArrayNode nbaStatsResponse = (ArrayNode) nbaStatsRepository.getAll().get("alerts");
+        ArrayNode nbaStatsResponse = (ArrayNode) nbaStatsService.getAll().get("alerts");
 
-        return StreamSupport.stream(nbaStatsResponse.spliterator(), true)
-                .sorted(getComparator())
-                .map(messageMapper::map)
-                .filter(alertsFilter.getFilter())
+        return StreamSupport.stream(nbaStatsResponse.spliterator(), true).sorted(getComparator())
+                .map(LambdaExceptionUtil.rethrowFunction(messageMapper::map)).filter(alertsFilter.getFilter())
                 .collect(Collectors.toCollection(ArrayList::new));
 
     }
@@ -125,33 +120,5 @@ public class BootStrap implements CommandLineRunner {
             }
         };
     }
-
-    private void downloadImageIfNotExists(Message message) throws IOException, TranscoderException {
-        String playerId = message.getPersonId();
-
-        if ("0".equals(playerId) || "-1".equals(playerId)) {
-            String teamId = message.getTeamId();
-            downloadTeamImageIfNotExists(teamId);
-        } else {
-            downloadPlayerImageIfNotExists(playerId);
-        }
-    }
-
-    private void downloadPlayerImageIfNotExists(String playerId) throws IOException {
-        if (!imagesRepository.existsPlayer(playerId)) {
-            byte[] imageBytes = nbaStatsRepository.getPlayerImage(playerId);
-            imagesRepository.savePlayer(playerId, imageBytes);
-        }
-    }
-
-    private void downloadTeamImageIfNotExists(String teamId) throws IOException, TranscoderException {
-        if (!imagesRepository.existsTeam(teamId)) {
-            String teamImageUrl = nbaStatsRepository.getTeamImageURL(teamId);
-            imagesRepository.saveTeam(teamId, teamImageUrl);
-        }
-    }
-
-
-
 
 }
